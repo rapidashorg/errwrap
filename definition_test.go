@@ -10,7 +10,6 @@ func TestNewError(t *testing.T) {
 	type args struct {
 		code       int
 		codeString string
-		message    string
 		category   ErrorCategory
 	}
 	tests := []struct {
@@ -23,20 +22,18 @@ func TestNewError(t *testing.T) {
 			args: args{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 			want: &ErrorDefinition{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			got := NewError(tt.args.code, tt.args.codeString, tt.args.message, tt.args.category)
+			got := NewError(tt.args.code, tt.args.codeString, tt.args.category)
 			got.maskFormatter = nil
 			got.formatter = nil
 
@@ -51,7 +48,6 @@ func TestErrorDefinition_Masked(t *testing.T) {
 	type fields struct {
 		code          int
 		codeString    string
-		message       string
 		isMasked      bool
 		maskMessage   string
 		maskFormatter MaskFormatter
@@ -67,13 +63,11 @@ func TestErrorDefinition_Masked(t *testing.T) {
 			fields: fields{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 			want: &ErrorDefinition{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 
 				isMasked:    true,
@@ -86,7 +80,6 @@ func TestErrorDefinition_Masked(t *testing.T) {
 			ed := &ErrorDefinition{
 				code:          tt.fields.code,
 				codeString:    tt.fields.codeString,
-				message:       tt.fields.message,
 				isMasked:      tt.fields.isMasked,
 				maskMessage:   tt.fields.maskMessage,
 				maskFormatter: tt.fields.maskFormatter,
@@ -108,7 +101,6 @@ func TestErrorDefinition_MaskedMessage(t *testing.T) {
 	type fields struct {
 		code          int
 		codeString    string
-		message       string
 		isMasked      bool
 		maskMessage   string
 		maskFormatter MaskFormatter
@@ -128,7 +120,6 @@ func TestErrorDefinition_MaskedMessage(t *testing.T) {
 			fields: fields{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 			args: args{
@@ -137,7 +128,6 @@ func TestErrorDefinition_MaskedMessage(t *testing.T) {
 			want: &ErrorDefinition{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 
 				isMasked:    true,
@@ -150,7 +140,6 @@ func TestErrorDefinition_MaskedMessage(t *testing.T) {
 			ed := &ErrorDefinition{
 				code:          tt.fields.code,
 				codeString:    tt.fields.codeString,
-				message:       tt.fields.message,
 				isMasked:      tt.fields.isMasked,
 				maskMessage:   tt.fields.maskMessage,
 				maskFormatter: tt.fields.maskFormatter,
@@ -172,7 +161,6 @@ func TestErrorDefinition_MaskedFunction(t *testing.T) {
 	type fields struct {
 		code          int
 		codeString    string
-		message       string
 		isMasked      bool
 		maskMessage   string
 		maskFormatter MaskFormatter
@@ -192,7 +180,6 @@ func TestErrorDefinition_MaskedFunction(t *testing.T) {
 			fields: fields{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 			args: args{
@@ -201,7 +188,6 @@ func TestErrorDefinition_MaskedFunction(t *testing.T) {
 			want: &ErrorDefinition{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 
 				isMasked: true,
@@ -213,7 +199,6 @@ func TestErrorDefinition_MaskedFunction(t *testing.T) {
 			ed := &ErrorDefinition{
 				code:          tt.fields.code,
 				codeString:    tt.fields.codeString,
-				message:       tt.fields.message,
 				isMasked:      tt.fields.isMasked,
 				maskMessage:   tt.fields.maskMessage,
 				maskFormatter: tt.fields.maskFormatter,
@@ -235,7 +220,6 @@ func TestErrorDefinition_MessageFormatter(t *testing.T) {
 	type fields struct {
 		code          int
 		codeString    string
-		message       string
 		isMasked      bool
 		formatter     MessageFormatter
 		maskMessage   string
@@ -256,7 +240,6 @@ func TestErrorDefinition_MessageFormatter(t *testing.T) {
 			fields: fields{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 			args: args{
@@ -265,7 +248,6 @@ func TestErrorDefinition_MessageFormatter(t *testing.T) {
 			want: &ErrorDefinition{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 		},
@@ -275,7 +257,6 @@ func TestErrorDefinition_MessageFormatter(t *testing.T) {
 			ed := &ErrorDefinition{
 				code:          tt.fields.code,
 				codeString:    tt.fields.codeString,
-				message:       tt.fields.message,
 				isMasked:      tt.fields.isMasked,
 				formatter:     tt.fields.formatter,
 				maskMessage:   tt.fields.maskMessage,
@@ -305,7 +286,8 @@ func TestErrorDefinition_NewWithoutContext(t *testing.T) {
 		category      ErrorCategory
 	}
 	type args struct {
-		args []interface{}
+		rawMessage string
+		args       []interface{}
 	}
 	tests := []struct {
 		name   string
@@ -322,7 +304,8 @@ func TestErrorDefinition_NewWithoutContext(t *testing.T) {
 				category:   ErrorCategory(1),
 			},
 			args: args{
-				args: []interface{}{"Foo"},
+				args:       []interface{}{"Foo"},
+				rawMessage: "Test error message",
 			},
 			want: &errorWrapper{
 				code:       100,
@@ -338,14 +321,13 @@ func TestErrorDefinition_NewWithoutContext(t *testing.T) {
 			ed := &ErrorDefinition{
 				code:          tt.fields.code,
 				codeString:    tt.fields.codeString,
-				message:       tt.fields.message,
 				isMasked:      tt.fields.isMasked,
 				maskMessage:   tt.fields.maskMessage,
 				maskFormatter: tt.fields.maskFormatter,
 				category:      tt.fields.category,
 			}
 
-			got := ed.NewWithoutContext(tt.args.args...)
+			got := ed.NewWithoutContext(tt.args.rawMessage, tt.args.args...)
 			if g, ok := got.(*errorWrapper); ok {
 				g.stackTrace = nil
 				g.maskFormatter = nil
@@ -363,15 +345,15 @@ func TestErrorDefinition_New(t *testing.T) {
 	type fields struct {
 		code          int
 		codeString    string
-		message       string
 		isMasked      bool
 		maskMessage   string
 		maskFormatter MaskFormatter
 		category      ErrorCategory
 	}
 	type args struct {
-		ctx  context.Context
-		args []interface{}
+		ctx        context.Context
+		args       []interface{}
+		rawMessage string
 	}
 	tests := []struct {
 		name   string
@@ -384,14 +366,14 @@ func TestErrorDefinition_New(t *testing.T) {
 			fields: fields{
 				code:       100,
 				codeString: "ErrTest",
-				message:    "Test error message",
 				category:   ErrorCategory(1),
 			},
 			args: args{
 				ctx: InjectErrorData(context.Background(), ErrorData{
 					"foo": "bar",
 				}),
-				args: []interface{}{"Foo"},
+				args:       []interface{}{"Foo"},
+				rawMessage: "Test error message",
 			},
 			want: &errorWrapper{
 				code:       100,
@@ -410,14 +392,13 @@ func TestErrorDefinition_New(t *testing.T) {
 			ed := &ErrorDefinition{
 				code:          tt.fields.code,
 				codeString:    tt.fields.codeString,
-				message:       tt.fields.message,
 				isMasked:      tt.fields.isMasked,
 				maskMessage:   tt.fields.maskMessage,
 				maskFormatter: tt.fields.maskFormatter,
 				category:      tt.fields.category,
 			}
 
-			got := ed.New(tt.args.ctx, tt.args.args...)
+			got := ed.New(tt.args.ctx, tt.args.rawMessage, tt.args.args...)
 			if g, ok := got.(*errorWrapper); ok {
 				g.stackTrace = nil
 				g.maskFormatter = nil

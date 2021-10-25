@@ -18,7 +18,6 @@ type ErrorCategory int
 type ErrorDefinition struct {
 	code          int              // error code
 	codeString    string           // error code in string
-	message       string           // error message
 	isMasked      bool             // is error message masked?
 	formatter     MessageFormatter // message formatter function
 	maskMessage   string           // error message mask
@@ -27,11 +26,10 @@ type ErrorDefinition struct {
 }
 
 // NewError creates simple error definition
-func NewError(code int, codeString string, message string, category ErrorCategory) *ErrorDefinition {
+func NewError(code int, codeString string, category ErrorCategory) *ErrorDefinition {
 	return &ErrorDefinition{
 		code:       code,
 		codeString: codeString,
-		message:    message,
 		category:   category,
 		formatter:  DefaultMessageFormatter,
 	}
@@ -74,15 +72,15 @@ func (ed *ErrorDefinition) MessageFormatter(fn MessageFormatter) *ErrorDefinitio
 
 // NewWithoutContext creates new ErrorWrapper based on error definition without
 // passed context
-func (ed *ErrorDefinition) NewWithoutContext(args ...interface{}) ErrorWrapper {
-	erw := newErrorWrapper(context.Background(), ed, args...)
+func (ed *ErrorDefinition) NewWithoutContext(rawMessage string, args ...interface{}) ErrorWrapper {
+	erw := newErrorWrapper(context.Background(), ed, rawMessage, args...)
 	erw.fillStackTrace(1)
 	return erw
 }
 
 // New creates new ErrorWrapper based on error definition
-func (ed *ErrorDefinition) New(ctx context.Context, args ...interface{}) ErrorWrapper {
-	erw := newErrorWrapper(ctx, ed, args...)
+func (ed *ErrorDefinition) New(ctx context.Context, rawMessage string, args ...interface{}) ErrorWrapper {
+	erw := newErrorWrapper(ctx, ed, rawMessage, args...)
 	erw.fillStackTrace(1)
 	return erw
 }

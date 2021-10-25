@@ -58,7 +58,7 @@ func Cast(err error) ErrorWrapper {
 // *ErrorDefinition
 func Convert(ctx context.Context, err ErrorWrapper, ed *ErrorDefinition) ErrorWrapper {
 	ctx = InjectErrorData(ctx, err.Data())
-	newErw := newErrorWrapper(ctx, ed, err.Args()...)
+	newErw := newErrorWrapper(ctx, ed, err.RawMessage(), err.Args()...)
 	newErw.fillStackTrace(1)
 	return newErw
 }
@@ -83,12 +83,12 @@ type errorWrapper struct {
 }
 
 // newErrorWrapper creates errorWrapper based on error definition
-func newErrorWrapper(ctx context.Context, ed *ErrorDefinition, args ...interface{}) *errorWrapper {
+func newErrorWrapper(ctx context.Context, ed *ErrorDefinition, rawMessage string, args ...interface{}) *errorWrapper {
 	erw := &errorWrapper{
 		code:       ed.code,
 		codeString: ed.codeString,
 
-		message:   ed.message,
+		message:   rawMessage,
 		category:  ed.category,
 		formatter: ed.formatter,
 

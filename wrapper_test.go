@@ -79,14 +79,13 @@ func TestConvert(t *testing.T) {
 				ed: &ErrorDefinition{
 					code:       101,
 					codeString: "ErrTestNew",
-					message:    "Test new error message",
 					category:   ErrorCategory(2),
 				},
 			},
 			want: &errorWrapper{
 				code:       101,
 				codeString: "ErrTestNew",
-				message:    "Test new error message",
+				message:    "Test error message",
 				category:   ErrorCategory(2),
 				data: ErrorData{
 					"foo": "bar",
@@ -111,9 +110,10 @@ func TestConvert(t *testing.T) {
 
 func Test_newErrorWrapper(t *testing.T) {
 	type args struct {
-		ctx  context.Context
-		ed   *ErrorDefinition
-		args []interface{}
+		ctx        context.Context
+		ed         *ErrorDefinition
+		rawMessage string
+		args       []interface{}
 	}
 	tests := []struct {
 		name string
@@ -129,10 +129,10 @@ func Test_newErrorWrapper(t *testing.T) {
 				ed: &ErrorDefinition{
 					code:       100,
 					codeString: "ErrTest",
-					message:    "Test error message: %s",
 					category:   ErrorCategory(1),
 				},
-				args: []interface{}{"Foo"},
+				rawMessage: "Test error message: %s",
+				args:       []interface{}{"Foo"},
 			},
 			want: &errorWrapper{
 				code:       100,
@@ -148,7 +148,7 @@ func Test_newErrorWrapper(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newErrorWrapper(tt.args.ctx, tt.args.ed, tt.args.args...); !reflect.DeepEqual(got, tt.want) {
+			if got := newErrorWrapper(tt.args.ctx, tt.args.ed, tt.args.rawMessage, tt.args.args...); !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("newErrorWrapper() = %v, want %v", got, tt.want)
 			}
 		})
@@ -779,7 +779,6 @@ func Test_errorWrapper_Is(t *testing.T) {
 				ed: &ErrorDefinition{
 					code:       100,
 					codeString: "ErrTest",
-					message:    "Test error message",
 					category:   ErrorCategory(1),
 				},
 			},
@@ -801,7 +800,6 @@ func Test_errorWrapper_Is(t *testing.T) {
 				ed: &ErrorDefinition{
 					code:       101,
 					codeString: "ErrTestNew",
-					message:    "Test new error message",
 					category:   ErrorCategory(2),
 				},
 			},

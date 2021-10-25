@@ -42,6 +42,10 @@ func getErrorData(ctx context.Context) ErrorData {
 		return nil
 	}
 
-	errData, _ := errDataItf.(ErrorData)
+	errData, ok := errDataItf.(ErrorData)
+	if !ok {
+		return nil
+	}
+
 	return errData
 }
