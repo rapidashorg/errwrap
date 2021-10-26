@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"runtime"
+	"strings"
 )
 
 // ErrorWrapper contains functions to define a wrapped error
@@ -176,23 +177,28 @@ func (e *errorWrapper) fillStackTrace(offset int) {
 	lines := make([]string, 0)
 
 	for i := 1 + offset; ; i++ {
+		// https://lawlessguy.wordpress.com/2016/04/17/display-file-function-and-line-number-in-go-golang/
 		fnptr, file, line, ok := runtime.Caller(i)
 		if !ok {
 			break
 		}
 
-		lines = append(lines, fmt.Sprintf("%s:%d (%s)", file, line, runtime.FuncForPC(fnptr).Name()))
+		funcName := runtime.FuncForPC(fnptr).Name()
+		if DefaultPackagePrefix != "" && !strings.HasPrefix(funcName, DefaultPackagePrefix) {
+			break
+		}
+
+		switch DefaultStackTraceMode {
+		case StackTraceModeFull:
+			lines = append(lines, fmt.Sprintf("%s:%d (%s)", file, line, funcName))
+
+		case StackTraceModeLineOnly:
+			lines = append(lines, fmt.Sprintf("%s:%d", file, line))
+
+		case StackTraceModeFuncOnly:
+			lines = append(lines, fmt.Sprintf("%s", funcName))
+		}
 	}
 
 	e.stackTrace = lines
-}
-
-// getCallLine get current caller line
-func (e *errorWrapper) getCallLine(offset int) string {
-	// https://lawlessguy.wordpress.com/2016/04/17/display-file-function-and-line-number-in-go-golang/
-	if fnptr, file, line, ok := runtime.Caller(1 + offset); ok {
-		return fmt.Sprintf("%s:%d (%s)", file, line, runtime.FuncForPC(fnptr).Name())
-	}
-
-	return ""
 }
