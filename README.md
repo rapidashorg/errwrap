@@ -75,7 +75,7 @@ There will be 2 main structs in this package, which is `errors.ErrorDefinition` 
 
 This struct is used to define an error. A single error will have a error code, error code in string, formatted error message, and error category. There is a single functions to define an error, which is `errors.NewError()`:
 
-- `func NewError(code int, codeString string, message string, category ErrorCategory) *ErrorDefinition`
+- `func NewError(code int, codeString string, category ErrorCategory) *ErrorDefinition`
     - This will create a new error definition.
     - Difference between `code` and `codeString` is how it's used. In our case, `code` is used to construct user error message as the numerical error code is anonymized form of error, and `codeString` is used by the developer for metrics tags, to give meaningful error message in metrics dashboard instead of using numeric error code.
 
@@ -92,10 +92,10 @@ In `errors.ErrorDefinition` struct, there will be several functions:
     - This sets the mask message to empty string, so we expect the mask message to be created within given mask formatter function.
 - `func (ed *ErrorDefinition) MessageFormatter(fn MessageFunction) *ErrorDefinition`
     - Sets the message formatter function used to format the message
-- `func (ed *ErrorDefinition) NewWithoutContext(args ...interface{}) ErrorWrapper`
+- `func (ed *ErrorDefinition) NewWithoutContext(rawMessage string, args ...interface{}) ErrorWrapper`
     - This will create `errors.ErrorWrapper` object based on the error definition.
-    - `args` is arguments that will be passed to `fmt.Sprintf` function to build formatted message. The `message` parameter when defining the error will be used as the format string.
-- `func (ed *ErrorDefinition) New(ctx context.Context, args ...interface{}) ErrorWrapper`
+    - `args` is arguments that will be passed to `fmt.Sprintf` function to build formatted message. The `rawMessage` parameter will be used as the format string.
+- `func (ed *ErrorDefinition) New(ctx context.Context, rawMessage string, args ...interface{}) ErrorWrapper`
     - Same as `errors.ErrorDefinition.NewWithoutContext()`, but we can pass context to the error. This context is used to inject error data for debugging purpose.
 
 **`errors.ErrorWrapper` interface**
