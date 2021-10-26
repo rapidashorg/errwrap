@@ -5,7 +5,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [0.0.2] - 2021-10-26
 
 ### Added
 
@@ -16,6 +16,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Add `Cast()` and `Convert()` util function
 - Add error code string as an addition to current numerical error code. The difference is, numerical error code is an anonymized form of the error that can be sent to user, while error code string is a static string, usually same as variable name, and can be used by developer for metrics tagging and easier error finding in addition to stack traces
 - Add `ErrorDefinition.Masked*()` functions, removing `NewMaskedError()` function usage
+- Add stack trace trimmer via `errwrap.DefaultPackagePrefix` and `errwrap.DefaultStackTraceMode`
 
 ### Changed
 
