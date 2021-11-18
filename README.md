@@ -30,16 +30,16 @@ const (
 )
 
 // define the errors first
-var ErrBadRequest     = errwrap.NewError(100, "ErrBadRequest", "Error bad request: %v", ErrCategoryBadRequest)
-var ErrInternalServer = errwrap.NewError(101, "ErrInternalServer", "Error internal server error: %v", ErrCategoryInternalServerError).Masked()
+var ErrBadRequest     = errwrap.NewError(100, "ErrBadRequest", ErrCategoryBadRequest)
+var ErrInternalServer = errwrap.NewError(101, "ErrInternalServer", ErrCategoryInternalServerError).Masked()
 
 func main() {
     // initialize the defined error
-    err1 := ErrBadRequest.NewWithoutContext("body not defined")
+    err1 := ErrBadRequest.NewWithoutContext("Error bad request: %v", "body not defined")
     // get the error message
     fmt.Println(err1.Error()) // Error bad request: body not defined (100)
 
-    err2 := ErrInternalServer.NewWithoutContext("file not exists")
+    err2 := ErrInternalServer.NewWithoutContext("Error internal server error: %v", "file not exists")
     fmt.Println(err2.Error())       // Sorry, there are internal server error occured, please try again later. (101)
     fmt.Println(err2.ActualError()) // Error internal server error: file not exists (101)
 
@@ -53,7 +53,7 @@ func main() {
         "data": data,
     })
 
-    err3 := ErrInternalServer.New(ctx, "a forbidden data")
+    err3 := ErrInternalServer.New(ctx, "Error internal server error: a forbidden data")
     fmt.Println(err3.ActualError())  // Error internal server error: a forbidden data (101)
     fmt.Println(err3.Data()) // { "data": "an arbitrary data" } }
     fmt.Println(err3.CodeString()) // "ErrInternalServer"
