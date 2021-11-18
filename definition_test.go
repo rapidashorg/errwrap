@@ -2,6 +2,7 @@ package errwrap
 
 import (
 	"context"
+	"fmt"
 	"reflect"
 	"testing"
 )
@@ -28,14 +29,16 @@ func TestNewError(t *testing.T) {
 				code:       100,
 				codeString: "ErrTest",
 				category:   ErrorCategory(1),
+
+				formatter:     &DefaultMessageFormatter,
+				maskMessage:   &DefaultMaskMessage,
+				maskFormatter: &DefaultMaskFormatter,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			got := NewError(tt.args.code, tt.args.codeString, tt.args.category)
-			got.maskFormatter = nil
-			got.formatter = nil
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("NewError() = %v, want %v", got, tt.want)
@@ -70,25 +73,18 @@ func TestErrorDefinition_Masked(t *testing.T) {
 				codeString: "ErrTest",
 				category:   ErrorCategory(1),
 
-				isMasked:    true,
-				maskMessage: DefaultMaskMessage,
+				isMasked:      true,
+				maskMessage:   &DefaultMaskMessage,
+				formatter:     &DefaultMessageFormatter,
+				maskFormatter: &DefaultMaskFormatter,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ed := &ErrorDefinition{
-				code:          tt.fields.code,
-				codeString:    tt.fields.codeString,
-				isMasked:      tt.fields.isMasked,
-				maskMessage:   tt.fields.maskMessage,
-				maskFormatter: tt.fields.maskFormatter,
-				category:      tt.fields.category,
-			}
+			ed := NewError(tt.fields.code, tt.fields.codeString, tt.fields.category)
 
 			got := ed.Masked()
-			got.maskFormatter = nil
-			got.formatter = nil
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ErrorDefinition.Masked() = %v, want %v", got, tt.want)
@@ -130,25 +126,18 @@ func TestErrorDefinition_MaskedMessage(t *testing.T) {
 				codeString: "ErrTest",
 				category:   ErrorCategory(1),
 
-				isMasked:    true,
-				maskMessage: "Test masked error message",
+				isMasked:      true,
+				maskMessage:   stringPtr("Test masked error message"),
+				formatter:     &DefaultMessageFormatter,
+				maskFormatter: &DefaultMaskFormatter,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ed := &ErrorDefinition{
-				code:          tt.fields.code,
-				codeString:    tt.fields.codeString,
-				isMasked:      tt.fields.isMasked,
-				maskMessage:   tt.fields.maskMessage,
-				maskFormatter: tt.fields.maskFormatter,
-				category:      tt.fields.category,
-			}
+			ed := NewError(tt.fields.code, tt.fields.codeString, tt.fields.category)
 
 			got := ed.MaskedMessage(tt.args.maskMessage)
-			got.maskFormatter = nil
-			got.formatter = nil
 
 			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("ErrorDefinition.MaskedMessage() = %v, want %v", got, tt.want)
@@ -183,34 +172,35 @@ func TestErrorDefinition_MaskedFunction(t *testing.T) {
 				category:   ErrorCategory(1),
 			},
 			args: args{
-				fn: nil,
+				fn: func(erw ErrorWrapper) string {
+					return "test " + erw.RawMaskMessage()
+				},
 			},
 			want: &ErrorDefinition{
 				code:       100,
 				codeString: "ErrTest",
 				category:   ErrorCategory(1),
 
-				isMasked: true,
+				isMasked:    true,
+				formatter:   &DefaultMessageFormatter,
+				maskMessage: &DefaultMaskMessage,
+				maskFormatter: maskFormatterPtr(func(erw ErrorWrapper) string {
+					return "test " + erw.RawMaskMessage()
+				}),
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ed := &ErrorDefinition{
-				code:          tt.fields.code,
-				codeString:    tt.fields.codeString,
-				isMasked:      tt.fields.isMasked,
-				maskMessage:   tt.fields.maskMessage,
-				maskFormatter: tt.fields.maskFormatter,
-				category:      tt.fields.category,
-			}
+			ed := NewError(tt.fields.code, tt.fields.codeString, tt.fields.category)
 
 			got := ed.MaskedFunction(tt.args.fn)
-			got.maskFormatter = nil
-			got.formatter = nil
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ErrorDefinition.MaskedFunction() = %v, want %v", got, tt.want)
+			gotErr := got.NewWithoutContext("error message")
+			wantErr := tt.want.NewWithoutContext("error message")
+
+			if !reflect.DeepEqual(gotErr.Error(), wantErr.Error()) {
+				t.Errorf("ErrorDefinition.MaskedFunction() = %v, want %v", gotErr.Error(), wantErr.Error())
 			}
 		})
 	}
@@ -243,33 +233,34 @@ func TestErrorDefinition_MessageFormatter(t *testing.T) {
 				category:   ErrorCategory(1),
 			},
 			args: args{
-				fn: nil,
+				fn: func(msg string, erw ErrorWrapper) string {
+					return fmt.Sprintf("test %s (%d)", msg, erw.Code())
+				},
 			},
 			want: &ErrorDefinition{
 				code:       100,
 				codeString: "ErrTest",
 				category:   ErrorCategory(1),
+
+				formatter: messageFormatterPtr(func(msg string, erw ErrorWrapper) string {
+					return fmt.Sprintf("test %s (%d)", msg, erw.Code())
+				}),
+				maskMessage:   &DefaultMaskMessage,
+				maskFormatter: &DefaultMaskFormatter,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ed := &ErrorDefinition{
-				code:          tt.fields.code,
-				codeString:    tt.fields.codeString,
-				isMasked:      tt.fields.isMasked,
-				formatter:     tt.fields.formatter,
-				maskMessage:   tt.fields.maskMessage,
-				maskFormatter: tt.fields.maskFormatter,
-				category:      tt.fields.category,
-			}
+			ed := NewError(tt.fields.code, tt.fields.codeString, tt.fields.category)
 
 			got := ed.MessageFormatter(tt.args.fn)
-			got.maskFormatter = nil
-			got.formatter = nil
 
-			if !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("ErrorDefinition.MessageFormatter() = %v, want %v", got, tt.want)
+			gotErr := got.NewWithoutContext("error message")
+			wantErr := tt.want.NewWithoutContext("error message")
+
+			if !reflect.DeepEqual(gotErr.Error(), wantErr.Error()) {
+				t.Errorf("ErrorDefinition.MaskedFunction() = %v, want %v", gotErr.Error(), wantErr.Error())
 			}
 		})
 	}
@@ -313,19 +304,16 @@ func TestErrorDefinition_NewWithoutContext(t *testing.T) {
 				message:    "Test error message",
 				category:   ErrorCategory(1),
 				args:       []interface{}{"Foo"},
+
+				formatter:     nil,
+				maskMessage:   DefaultMaskMessage,
+				maskFormatter: nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ed := &ErrorDefinition{
-				code:          tt.fields.code,
-				codeString:    tt.fields.codeString,
-				isMasked:      tt.fields.isMasked,
-				maskMessage:   tt.fields.maskMessage,
-				maskFormatter: tt.fields.maskFormatter,
-				category:      tt.fields.category,
-			}
+			ed := NewError(tt.fields.code, tt.fields.codeString, tt.fields.category)
 
 			got := ed.NewWithoutContext(tt.args.rawMessage, tt.args.args...)
 			if g, ok := got.(*errorWrapper); ok {
@@ -384,19 +372,16 @@ func TestErrorDefinition_New(t *testing.T) {
 				data: ErrorData{
 					"foo": "bar",
 				},
+
+				formatter:     nil,
+				maskMessage:   DefaultMaskMessage,
+				maskFormatter: nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			ed := &ErrorDefinition{
-				code:          tt.fields.code,
-				codeString:    tt.fields.codeString,
-				isMasked:      tt.fields.isMasked,
-				maskMessage:   tt.fields.maskMessage,
-				maskFormatter: tt.fields.maskFormatter,
-				category:      tt.fields.category,
-			}
+			ed := NewError(tt.fields.code, tt.fields.codeString, tt.fields.category)
 
 			got := ed.New(tt.args.ctx, tt.args.rawMessage, tt.args.args...)
 			if g, ok := got.(*errorWrapper); ok {
