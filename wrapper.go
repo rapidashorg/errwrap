@@ -85,17 +85,30 @@ type errorWrapper struct {
 
 // newErrorWrapper creates errorWrapper based on error definition
 func newErrorWrapper(ctx context.Context, ed *ErrorDefinition, rawMessage string, args ...interface{}) *errorWrapper {
+	msgformatter := DefaultMessageFormatter
+	maskMessage := DefaultMaskMessage
+	maskFormatter := DefaultMaskFormatter
+	if ed.formatter != nil {
+		msgformatter = *ed.formatter
+	}
+	if ed.maskMessage != nil {
+		maskMessage = *ed.maskMessage
+	}
+	if ed.maskFormatter != nil {
+		maskFormatter = *ed.maskFormatter
+	}
+
 	erw := &errorWrapper{
 		code:       ed.code,
 		codeString: ed.codeString,
 
 		message:   rawMessage,
 		category:  ed.category,
-		formatter: ed.formatter,
+		formatter: msgformatter,
 
 		isMasked:      ed.isMasked,
-		maskMessage:   ed.maskMessage,
-		maskFormatter: ed.maskFormatter,
+		maskMessage:   maskMessage,
+		maskFormatter: maskFormatter,
 
 		args: args,
 		data: getErrorData(ctx),

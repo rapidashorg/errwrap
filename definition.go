@@ -16,22 +16,24 @@ type ErrorCategory int
 
 // ErrorDefinition defines an error definition
 type ErrorDefinition struct {
-	code          int              // error code
-	codeString    string           // error code in string
-	isMasked      bool             // is error message masked?
-	formatter     MessageFormatter // message formatter function
-	maskMessage   string           // error message mask
-	maskFormatter MaskFormatter    // mask formatter function
-	category      ErrorCategory    // error category
+	code          int               // error code
+	codeString    string            // error code in string
+	isMasked      bool              // is error message masked?
+	formatter     *MessageFormatter // message formatter function
+	maskMessage   *string           // error message mask
+	maskFormatter *MaskFormatter    // mask formatter function
+	category      ErrorCategory     // error category
 }
 
 // NewError creates simple error definition
 func NewError(code int, codeString string, category ErrorCategory) *ErrorDefinition {
 	return &ErrorDefinition{
-		code:       code,
-		codeString: codeString,
-		category:   category,
-		formatter:  DefaultMessageFormatter,
+		code:          code,
+		codeString:    codeString,
+		category:      category,
+		formatter:     &DefaultMessageFormatter,
+		maskMessage:   &DefaultMaskMessage,
+		maskFormatter: &DefaultMaskFormatter,
 	}
 }
 
@@ -40,8 +42,8 @@ func NewError(code int, codeString string, category ErrorCategory) *ErrorDefinit
 // default one.
 func (ed *ErrorDefinition) Masked() *ErrorDefinition {
 	ed.isMasked = true
-	ed.maskMessage = DefaultMaskMessage
-	ed.maskFormatter = DefaultMaskFormatter
+	ed.maskMessage = &DefaultMaskMessage
+	ed.maskFormatter = &DefaultMaskFormatter
 	return ed
 }
 
@@ -50,8 +52,8 @@ func (ed *ErrorDefinition) Masked() *ErrorDefinition {
 // passed as arguments, and the mask formatter function used is the default one.
 func (ed *ErrorDefinition) MaskedMessage(maskMessage string) *ErrorDefinition {
 	ed.isMasked = true
-	ed.maskMessage = maskMessage
-	ed.maskFormatter = DefaultMaskFormatter
+	ed.maskMessage = &maskMessage
+	ed.maskFormatter = &DefaultMaskFormatter
 	return ed
 }
 
@@ -60,13 +62,13 @@ func (ed *ErrorDefinition) MaskedMessage(maskMessage string) *ErrorDefinition {
 // the mask message is provided from running passed function.
 func (ed *ErrorDefinition) MaskedFunction(fn MaskFormatter) *ErrorDefinition {
 	ed.isMasked = true
-	ed.maskFormatter = fn
+	ed.maskFormatter = &fn
 	return ed
 }
 
 // MessageFormatter sets the message formatter
 func (ed *ErrorDefinition) MessageFormatter(fn MessageFormatter) *ErrorDefinition {
-	ed.formatter = fn
+	ed.formatter = &fn
 	return ed
 }
 

@@ -91,6 +91,10 @@ func TestConvert(t *testing.T) {
 					"foo": "bar",
 					"bar": "baz",
 				},
+
+				formatter:     nil,
+				maskMessage:   DefaultMaskMessage,
+				maskFormatter: nil,
 			},
 		},
 	}
@@ -99,6 +103,8 @@ func TestConvert(t *testing.T) {
 			got := Convert(tt.args.ctx, tt.args.err, tt.args.ed)
 			if g, ok := got.(*errorWrapper); ok {
 				g.stackTrace = nil
+				g.formatter = nil
+				g.maskFormatter = nil
 			}
 
 			if !reflect.DeepEqual(got, tt.want) {
@@ -143,12 +149,21 @@ func Test_newErrorWrapper(t *testing.T) {
 				data: ErrorData{
 					"foo": "bar",
 				},
+
+				formatter:     nil,
+				maskMessage:   DefaultMaskMessage,
+				maskFormatter: nil,
 			},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			if got := newErrorWrapper(tt.args.ctx, tt.args.ed, tt.args.rawMessage, tt.args.args...); !reflect.DeepEqual(got, tt.want) {
+			got := newErrorWrapper(tt.args.ctx, tt.args.ed, tt.args.rawMessage, tt.args.args...)
+
+			got.formatter = nil
+			got.maskFormatter = nil
+
+			if !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("newErrorWrapper() = %v, want %v", got, tt.want)
 			}
 		})
