@@ -18,16 +18,20 @@ func InjectErrorData(ctx context.Context, data ErrorData) context.Context {
 		return nil
 	}
 
+	if data == nil {
+		return ctx
+	}
+
 	curr := getErrorData(ctx)
-	if curr == nil {
-		curr = make(ErrorData)
+
+	for k, v := range curr {
+		if _, exist := data[k]; exist {
+			continue
+		}
+		data[k] = v
 	}
 
-	for k, v := range data {
-		curr[k] = v
-	}
-
-	ctx = context.WithValue(ctx, contextKeyErrorData, curr)
+	ctx = context.WithValue(ctx, contextKeyErrorData, data)
 	return ctx
 }
 

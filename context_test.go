@@ -3,8 +3,61 @@ package errwrap
 import (
 	"context"
 	"reflect"
+	"sync"
 	"testing"
+	"time"
 )
+
+func TestConccurrentInjectErrorData(t *testing.T) {
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	ctx = InjectErrorData(ctx, ErrorData{"test1": "test1"})
+
+	ctx1 := ctx
+	ctx2 := ctx
+
+	wg := sync.WaitGroup{}
+	wg.Add(2)
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx1.Done():
+				return
+			default:
+				ctx1 = InjectErrorData(ctx1, nil)
+				ctx1 = InjectErrorData(ctx1, ErrorData{"test1": "goroutine1"})
+			}
+		}
+	}()
+	go func() {
+		defer wg.Done()
+		for {
+			select {
+			case <-ctx2.Done():
+				return
+			default:
+				ctx2 = InjectErrorData(ctx2, nil)
+				ctx2 = InjectErrorData(ctx2, ErrorData{"test1": "goroutine2"})
+			}
+		}
+	}()
+
+	time.Sleep(5 * time.Second)
+	cancel()
+	wg.Wait()
+
+	if !reflect.DeepEqual(getErrorData(ctx)["test1"], "test1") {
+		t.Error("not equal", getErrorData(ctx)["test1"])
+	}
+	if !reflect.DeepEqual(getErrorData(ctx1)["test1"], "goroutine1") {
+		t.Error("not equal", getErrorData(ctx1)["test1"])
+	}
+	if !reflect.DeepEqual(getErrorData(ctx2)["test1"], "goroutine2") {
+		t.Error("not equal", getErrorData(ctx2)["test1"])
+	}
+}
 
 func TestInjectErrorData(t *testing.T) {
 	type args struct {
