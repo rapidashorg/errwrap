@@ -4,6 +4,10 @@ import "context"
 
 // ErrorData contains additional data for debugging purpose
 type ErrorData map[string]interface{}
+type errorDataWrapper struct {
+	data   ErrorData
+	parent *errorDataWrapper
+}
 type contextKey string
 
 var (
@@ -18,17 +22,37 @@ func InjectErrorData(ctx context.Context, data ErrorData) context.Context {
 		return nil
 	}
 
-	curr := getErrorData(ctx)
-	if curr == nil {
-		curr = make(ErrorData)
+	if data == nil {
+		return ctx
 	}
 
-	for k, v := range data {
-		curr[k] = v
+	parent := getErrorDataWrapper(ctx)
+
+	curr := &errorDataWrapper{
+		data:   data,
+		parent: parent,
 	}
 
 	ctx = context.WithValue(ctx, contextKeyErrorData, curr)
 	return ctx
+}
+
+func getErrorDataWrapper(ctx context.Context) *errorDataWrapper {
+	if ctx == nil {
+		return nil
+	}
+
+	errDataWrapperItf := ctx.Value(contextKeyErrorData)
+	if errDataWrapperItf == nil {
+		return nil
+	}
+
+	errDataWrapper, ok := errDataWrapperItf.(*errorDataWrapper)
+	if !ok || errDataWrapper == nil {
+		return nil
+	}
+
+	return errDataWrapper
 }
 
 // getErrorData returns ErrorData from given context
@@ -37,15 +61,26 @@ func getErrorData(ctx context.Context) ErrorData {
 		return nil
 	}
 
-	errDataItf := ctx.Value(contextKeyErrorData)
-	if errDataItf == nil {
-		return nil
-	}
+	var errData ErrorData
 
-	errData, ok := errDataItf.(ErrorData)
-	if !ok {
-		return nil
-	}
+	errDataWrapper := getErrorDataWrapper(ctx)
 
-	return errData
+	for {
+		if errDataWrapper == nil {
+			return errData
+		}
+
+		if errData == nil {
+			errData = make(ErrorData)
+		}
+
+		for k, v := range errDataWrapper.data {
+			if _, exists := errData[k]; exists {
+				continue
+			}
+			errData[k] = v
+		}
+
+		errDataWrapper = errDataWrapper.parent
+	}
 }
