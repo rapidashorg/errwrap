@@ -1,9 +1,16 @@
 package errwrap
 
-import "context"
+import (
+	"context"
+	"sync"
+)
 
 // ErrorData contains additional data for debugging purpose
 type ErrorData map[string]interface{}
+type errorDataWrapper struct {
+	errorData ErrorData
+	lock      sync.RWMutex
+}
 type contextKey string
 
 var (
@@ -18,34 +25,55 @@ func InjectErrorData(ctx context.Context, data ErrorData) context.Context {
 		return nil
 	}
 
-	curr := getErrorData(ctx)
+	curr := getErrorDataWrapper(ctx)
 	if curr == nil {
-		curr = make(ErrorData)
+		curr = &errorDataWrapper{
+			errorData: make(ErrorData),
+		}
 	}
 
+	curr.lock.Lock()
 	for k, v := range data {
-		curr[k] = v
+		curr.errorData[k] = v
 	}
+	curr.lock.Unlock()
 
 	ctx = context.WithValue(ctx, contextKeyErrorData, curr)
 	return ctx
 }
 
-// getErrorData returns ErrorData from given context
-func getErrorData(ctx context.Context) ErrorData {
+// getErrorDataWrapper returns ErrorData from given context
+func getErrorDataWrapper(ctx context.Context) *errorDataWrapper {
 	if ctx == nil {
 		return nil
 	}
 
-	errDataItf := ctx.Value(contextKeyErrorData)
-	if errDataItf == nil {
+	errDataWrapperItf := ctx.Value(contextKeyErrorData)
+	if errDataWrapperItf == nil {
 		return nil
 	}
 
-	errData, ok := errDataItf.(ErrorData)
-	if !ok {
+	errDataWrapper, ok := errDataWrapperItf.(*errorDataWrapper)
+	if !ok || errDataWrapper == nil {
 		return nil
 	}
 
+	return errDataWrapper
+}
+
+func getErrorData(ctx context.Context) ErrorData {
+	errDataWrapper := getErrorDataWrapper(ctx)
+	if errDataWrapper == nil {
+		return nil
+	}
+
+	errDataWrapper.lock.RLock()
+	defer errDataWrapper.lock.RUnlock()
+
+	errData := make(ErrorData)
+
+	for k, v := range errDataWrapper.errorData {
+		errData[k] = v
+	}
 	return errData
 }
